@@ -2,7 +2,9 @@ import json
 import os
 from .utils import (
     send_post_request,
-    read_video_frames
+    read_video_frames_local,
+    read_video_frames_url,
+    get_video_url_from_json
 )
 
 class mochi:
@@ -24,7 +26,7 @@ class mochi:
     CATEGORY = "☁️BizyAir/Trellis"
     FUNCTION = "main"
 
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = ("STRING",)
     # RETURN_NAMES = ("path",)
     OUTPUT_NODE = True
     OUTPUT_IS_LIST = (False,)
@@ -54,13 +56,43 @@ class mochi:
         if msg["type"] != "success":  
             raise Exception(f"Unexpected response type: {msg}")
         
-        frames_tensor = read_video_frames(msg["outvideo"], frames, (width, height))
-        os.remove(msg["outvideo"])
+        return (msg["outvideo"], )
+        # frames_tensor = read_video_frames_local(msg["outvideo"], frames, (width, height))
+        # os.remove(msg["outvideo"])
+        # return (frames_tensor, )
+
+
+class splitvideoframes:
+    API_URL = "http://0.0.0.0:10002/mochivideo"
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "path": ("STRING", {"default": "default"}),
+                "width": ("INT", {"default": 848, "min": 64, "max": 1536, "step": 8}),
+                "height": ("INT", {"default": 480, "min": 64, "max": 1536, "step": 8}),
+                "frames": ("INT", {"default": 96, "min": 1, "max": 4096}),         
+            }
+        }
+
+    CATEGORY = "☁️BizyAir/Trellis"
+    FUNCTION = "main"
+
+    RETURN_TYPES = ("IMAGE",)
+    # RETURN_NAMES = ("path",)
+    OUTPUT_NODE = True
+    OUTPUT_IS_LIST = (False,)
+
+    def main(self, path, width, height, frames):
+        video_url = get_video_url_from_json(path)
+        frames_tensor = read_video_frames_url(video_url, frames, (width, height))       
         return (frames_tensor, )
     
 NODE_CLASS_MAPPINGS = {
     "mochi": mochi,
+    "splitvideoframes": splitvideoframes,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "mochi": "mochi"
+    "mochi": "mochi",
+    "splitvideoframes": "splitvideoframes"
 }
